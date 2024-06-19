@@ -18,6 +18,7 @@ set(utils_src_files
     query_memory_tracker.cpp
     exponential_backoff.hpp
     exponential_backoff.cpp
+    compressor.cpp
 )
 
 find_package(Boost REQUIRED)
