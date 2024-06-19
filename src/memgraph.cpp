@@ -169,7 +169,6 @@ int main(int argc, char **argv) {
     exit(1);
   }
 
-  memgraph::flags::InitializeLogger();
   auto flags_experimental = memgraph::flags::ReadExperimental(FLAGS_experimental_enabled);
   memgraph::flags::SetExperimental(flags_experimental);
   auto *maybe_experimental = std::getenv(kMgExperimentalEnabled);
@@ -177,6 +176,10 @@ int main(int argc, char **argv) {
     auto env_experimental = memgraph::flags::ReadExperimental(maybe_experimental);
     memgraph::flags::AppendExperimental(env_experimental);
   }
+  // Initialize the logger. Done after experimental setup so that we could print which experimental features are enabled
+  // even if
+  // `--also-log-to-stderr` is set to false.
+  memgraph::flags::InitializeLogger();
 
   // Unhandled exception handler init.
   std::set_terminate(&memgraph::utils::TerminateHandler);
@@ -304,6 +307,7 @@ int main(int argc, char **argv) {
                                              memgraph::utils::global_settings);
   memgraph::utils::OnScopeExit global_license_finalizer([] { memgraph::license::global_license_checker.Finalize(); });
 
+  // Has to be initialized after the storage
   memgraph::flags::run_time::Initialize();
 
   memgraph::license::global_license_checker.CheckEnvLicense();
@@ -418,6 +422,16 @@ int main(int argc, char **argv) {
     db_config.durability.snapshot_wal_mode = DISABLED;
     db_config.durability.snapshot_interval = 0s;
   }
+
+#ifdef MG_ENTERPRISE
+  if (std::chrono::seconds(FLAGS_instance_down_timeout_sec) <
+      std::chrono::seconds(FLAGS_instance_health_check_frequency_sec)) {
+    LOG_FATAL(
+        "Instance down timeout config option must be greater than or equal to instance health check frequency config "
+        "option!");
+  }
+
+#endif
 
   // Default interpreter configuration
   memgraph::query::InterpreterConfig interp_config{
