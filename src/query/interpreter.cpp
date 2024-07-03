@@ -724,6 +724,9 @@ Callback HandleAuthQuery(AuthQuery *auth_query, InterpreterContext *interpreter_
 #endif
   auto password = EvaluateOptionalExpression(auth_query->password_, evaluator);
 
+  auto oldPassword = EvaluateOptionalExpression(auth_query->old_password_, evaluator);
+  auto newPassword = EvaluateOptionalExpression(auth_query->new_password_, evaluator);
+
   Callback callback;
 
   const auto license_check_result = license::global_license_checker.IsEnterpriseValid(utils::global_settings);
@@ -833,6 +836,27 @@ Callback HandleAuthQuery(AuthQuery *auth_query, InterpreterContext *interpreter_
         auth->SetPassword(username,
                           password.IsString() ? std::make_optional(std::string(password.ValueString())) : std::nullopt,
                           &*interpreter->system_transaction_);
+        return std::vector<std::vector<TypedValue>>();
+      };
+      return callback;
+    case AuthQuery::Action::CHANGE_PASSWORD:
+      forbid_on_replica();
+      callback.fn = [auth, username, oldPassword, newPassword, interpreter = &interpreter] {
+        if (!interpreter->system_transaction_) {
+          throw QueryException("Expected to be in a system transaction");
+        }
+        const std::optional<std::string> username = interpreter->user_or_role_->username();
+        if (!username) {
+          throw QueryException("You need to be valid user to replace password");
+        }
+
+        MG_ASSERT(newPassword.IsString() || newPassword.IsNull());
+        MG_ASSERT(oldPassword.IsString() || oldPassword.IsNull());
+        auth->ChangePassword(
+            *username,
+            oldPassword.IsString() ? std::make_optional(std::string(oldPassword.ValueString())) : std::nullopt,
+            newPassword.IsString() ? std::make_optional(std::string(newPassword.ValueString())) : std::nullopt,
+            &*interpreter->system_transaction_);
         return std::vector<std::vector<TypedValue>>();
       };
       return callback;
@@ -4995,6 +5019,10 @@ Interpreter::PrepareResult Interpreter::Prepare(const std::string &query_string,
         throw EnumModificationInMulticommandTxException();
       }
       prepared_query = PrepareEnumAlterUpdateQuery(std::move(parsed_query), current_db_);
+    } else if (utils::Downcast<AlterEnumRemoveValueQuery>(parsed_query.query)) {
+      throw utils::NotYetImplemented("Alter enum remove value");
+    } else if (utils::Downcast<DropEnumQuery>(parsed_query.query)) {
+      throw utils::NotYetImplemented("Drop enum");
     } else {
       LOG_FATAL("Should not get here -- unknown query type!");
     }
