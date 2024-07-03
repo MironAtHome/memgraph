@@ -20,6 +20,7 @@
 #include <map>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -1449,7 +1450,7 @@ void SetSizeData(uint8_t *buffer, uint32_t size, uint8_t *data) {
 void BufferInfoFromUncompressedData(BufferInfo &buffer_info, const utils::DataBuffer &uncompressed_buffer) {
   buffer_info.in_local_buffer = false;
   buffer_info.size = uncompressed_buffer.original_size;
-  memcpy(&buffer_info.data, uncompressed_buffer.data, sizeof(uint8_t *));
+  buffer_info.data = uncompressed_buffer.data;
 }
 
 }  // namespace
@@ -1633,7 +1634,7 @@ bool PropertyStore::SetProperty(PropertyId property, const PropertyValue &value)
   if (IsCompressed()) {
     decompressed_buffer = DecompressBuffer();
     size = decompressed_buffer.original_size;
-    memcpy(&data, decompressed_buffer.data, sizeof(uint8_t *));
+    data = decompressed_buffer.data;
   } else {
     std::tie(size, data) = GetSizeData(buffer_);
     if (size % 8 != 0) {
@@ -1900,6 +1901,8 @@ void PropertyStore::CompressBuffer() {
   if (buffer_info.size == 0 || buffer_info.in_local_buffer) {
     return;
   }
+  spdlog::debug("data before compression: {}",
+                std::string_view(reinterpret_cast<char *>(buffer_info.data), buffer_info.size));
 
   auto *compressor = utils::ZlibCompressor::GetInstance();
   auto compressed_buffer = compressor->Compress(buffer_info.data, buffer_info.size);
@@ -1947,6 +1950,9 @@ utils::DataBuffer PropertyStore::DecompressBuffer() const {
   if (decompressed_buffer.data == nullptr) {
     throw PropertyValueException("Failed to decompress buffer");
   }
+
+  spdlog::debug("data after decompression: {}", std::string_view(reinterpret_cast<char *>(decompressed_buffer.data),
+                                                                 decompressed_buffer.original_size));
 
   return decompressed_buffer;
 }
