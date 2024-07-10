@@ -25,6 +25,7 @@
 
 /// REPLICATION ///
 #include "replication/config.hpp"
+#include "storage/v2/delta_container.hpp"
 #include "storage/v2/inmemory/replication/recovery.hpp"
 #include "storage/v2/replication/enums.hpp"
 #include "storage/v2/replication/replication_storage_state.hpp"
@@ -76,8 +77,7 @@ class InMemoryStorage final : public Storage {
     friend class InMemoryStorage;
 
     explicit InMemoryAccessor(auto tag, InMemoryStorage *storage, IsolationLevel isolation_level,
-                              StorageMode storage_mode,
-                              memgraph::replication_coordination_glue::ReplicationRole replication_role);
+                              StorageMode storage_mode);
 
    public:
     InMemoryAccessor(const InMemoryAccessor &) = delete;
@@ -389,11 +389,9 @@ class InMemoryStorage final : public Storage {
   };
 
   using Storage::Access;
-  std::unique_ptr<Accessor> Access(memgraph::replication_coordination_glue::ReplicationRole replication_role,
-                                   std::optional<IsolationLevel> override_isolation_level) override;
+  std::unique_ptr<Accessor> Access(std::optional<IsolationLevel> override_isolation_level) override;
   using Storage::UniqueAccess;
-  std::unique_ptr<Accessor> UniqueAccess(memgraph::replication_coordination_glue::ReplicationRole replication_role,
-                                         std::optional<IsolationLevel> override_isolation_level) override;
+  std::unique_ptr<Accessor> UniqueAccess(std::optional<IsolationLevel> override_isolation_level) override;
 
   void FreeMemory(std::unique_lock<utils::ResourceLock> main_guard, bool periodic) override;
 
@@ -406,8 +404,7 @@ class InMemoryStorage final : public Storage {
 
   void CreateSnapshotHandler(std::function<utils::BasicResult<InMemoryStorage::CreateSnapshotError>()> cb);
 
-  Transaction CreateTransaction(IsolationLevel isolation_level, StorageMode storage_mode,
-                                memgraph::replication_coordination_glue::ReplicationRole replication_role) override;
+  Transaction CreateTransaction(IsolationLevel isolation_level, StorageMode storage_mode) override;
 
   void SetStorageMode(StorageMode storage_mode);
 
@@ -432,7 +429,7 @@ class InMemoryStorage final : public Storage {
   void FinalizeWalFile();
 
   StorageInfo GetBaseInfo() override;
-  StorageInfo GetInfo(memgraph::replication_coordination_glue::ReplicationRole replication_role) override;
+  StorageInfo GetInfo() override;
 
   /// Return true in all cases except if any sync replicas have not sent confirmation.
   [[nodiscard]] bool AppendToWal(const Transaction &transaction, uint64_t durability_commit_timestamp,
@@ -504,14 +501,14 @@ class InMemoryStorage final : public Storage {
   std::mutex gc_lock_;
 
   struct GCDeltas {
-    GCDeltas(uint64_t mark_timestamp, std::deque<Delta> deltas, std::unique_ptr<std::atomic<uint64_t>> commit_timestamp)
+    GCDeltas(uint64_t mark_timestamp, delta_container deltas, std::unique_ptr<std::atomic<uint64_t>> commit_timestamp)
         : mark_timestamp_{mark_timestamp}, deltas_{std::move(deltas)}, commit_timestamp_{std::move(commit_timestamp)} {}
 
     GCDeltas(GCDeltas &&) = default;
     GCDeltas &operator=(GCDeltas &&) = default;
 
     uint64_t mark_timestamp_{};                                  //!< a timestamp no active transaction currently has
-    std::deque<Delta> deltas_;                                   //!< the deltas that need cleaning
+    delta_container deltas_;                                     //!< the deltas that need cleaning
     std::unique_ptr<std::atomic<uint64_t>> commit_timestamp_{};  //!< the timestamp the deltas are pointing at
   };
 
