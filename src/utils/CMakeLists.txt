@@ -21,6 +21,7 @@ target_sources(mg-utils
     build_info.cpp
     query_memory_tracker.cpp
     exponential_backoff.cpp
+    compressor.cpp
 
     PUBLIC
     FILE_SET HEADERS
@@ -32,9 +33,8 @@ target_sources(mg-utils
     memory_layout.hpp
     small_vector.hpp
     static_vector.hpp
-
-    compressor.cpp
 )
+
 find_package(Boost REQUIRED)
 find_package(fmt REQUIRED)
 find_package(gflags REQUIRED)
