@@ -146,3 +146,7 @@ workloads:
     binary: "tests/e2e/pytest_runner.sh"
     args: ["replication/edge_delete.py"]
     <<: *template_simple_cluster
+
+  - name: "TTL replication"
+    binary: "tests/e2e/pytest_runner.sh"
+    args: ["replication/ttl.py"]
