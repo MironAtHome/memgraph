@@ -3081,11 +3081,10 @@ PreparedQuery PrepareTextIndexQuery(ParsedQuery parsed_query, bool in_explicit_t
       RWType::W};
 }
 
-// NOLINTNEXTLINE(misc-unused-parameters)
+#ifdef MG_ENTERPRISE
 PreparedQuery PrepareTtlQuery(ParsedQuery parsed_query, bool in_explicit_transaction,
                               std::vector<Notification> *notifications, CurrentDB &current_db,
                               InterpreterContext *interpreter_context) {
-#ifdef MG_ENTERPRISE
   if (!license::global_license_checker.IsEnterpriseValidFast()) {
     throw QueryException("Trying to use enterprise feature without a valid license.");
   }
@@ -3185,10 +3184,8 @@ PreparedQuery PrepareTtlQuery(ParsedQuery parsed_query, bool in_explicit_transac
                          return QueryHandlerResult::COMMIT;  // TODO: Will need to become COMMIT when we fix replication
                        },
                        RWType::W};
-#else
-  throw QueryException("Query not supported.");
-#endif
 }
+#endif
 
 PreparedQuery PrepareAuthQuery(ParsedQuery parsed_query, bool in_explicit_transaction,
                                InterpreterContext *interpreter_context, Interpreter &interpreter) {
@@ -5073,8 +5070,12 @@ Interpreter::PrepareResult Interpreter::Prepare(const std::string &query_string,
       prepared_query = PrepareTextIndexQuery(std::move(parsed_query), in_explicit_transaction_,
                                              &query_execution->notifications, current_db_);
     } else if (utils::Downcast<TtlQuery>(parsed_query.query)) {
+#ifdef MG_ENTERPRISE
       prepared_query = PrepareTtlQuery(std::move(parsed_query), in_explicit_transaction_,
                                        &query_execution->notifications, current_db_, interpreter_context_);
+#else
+      throw QueryException("Query not supported.");
+#endif  // MG_ENTERPRISE
     } else if (utils::Downcast<AnalyzeGraphQuery>(parsed_query.query)) {
       prepared_query = PrepareAnalyzeGraphQuery(std::move(parsed_query), in_explicit_transaction_, current_db_);
     } else if (utils::Downcast<AuthQuery>(parsed_query.query)) {
