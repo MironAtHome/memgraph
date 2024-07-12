@@ -1929,10 +1929,10 @@ void PropertyStore::SetBuffer(const std::string_view buffer) {
   }
 }
 
-bool PropertyStore::CompressBuffer(uint8_t *data, uint32_t size) {
+void PropertyStore::CompressBuffer(uint8_t *data, uint32_t size) {
   if (size == 0 || size % 8 != 0) {
     is_compressed_ = false;
-    return false;
+    return;
   }
 
   auto *compressor = utils::ZlibCompressor::GetInstance();
@@ -1945,7 +1945,7 @@ bool PropertyStore::CompressBuffer(uint8_t *data, uint32_t size) {
   if (compressed_size_to_power_of_8 >= size) {
     // Compressed buffer + metadata are larger than the original buffer, so we don't perform the compression.
     is_compressed_ = false;
-    return false;
+    return;
   }
 
   auto *compressed_data = new uint8_t[compressed_size_to_power_of_8];
@@ -1964,8 +1964,6 @@ bool PropertyStore::CompressBuffer(uint8_t *data, uint32_t size) {
 
   SetSizeData(buffer_, compressed_size_to_power_of_8, compressed_data);
   is_compressed_ = true;
-
-  return true;
 }
 
 utils::DataBuffer PropertyStore::DecompressBuffer() const {
