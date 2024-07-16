@@ -17,6 +17,7 @@
 #include <vector>
 
 #include "storage/v2/enum.hpp"
+#include "storage/v2/point.hpp"
 #include "storage/v2/temporal.hpp"
 #include "utils/algorithm.hpp"
 #include "utils/exceptions.hpp"
@@ -45,6 +46,8 @@ enum class PropertyValueType : uint8_t {
   TemporalData = 7,
   ZonedTemporalData = 8,
   Enum = 9,
+  Point_2d = 10,
+  Point_3d = 11,
 };
 
 inline bool AreComparableTypes(PropertyValueType a, PropertyValueType b) {
@@ -198,6 +201,8 @@ class PropertyValueImpl {
       case Type::ZonedTemporalData:
         // Do nothing: std::chrono::time_zone* pointers reference immutable values from the external tz DB
       case Type::Enum:
+      case Type::Point_2d:
+      case Type::Point_3d:
         return;
       // destructor for non primitive types since we used placement new
       case Type::String:
@@ -362,11 +367,19 @@ class PropertyValueImpl {
     struct {
       Type type_ = Type::ZonedTemporalData;
       ZonedTemporalData val_;
-    } zoned_temporal_data_v;
+    } zoned_temporal_data_v;  // largest current member at 40B TODO: make smaller
     struct {
       Type type_ = Type::Enum;
       Enum val_;
     } enum_data_v;
+    struct {
+      Type type_ = Type::Point_2d;
+      Point2d val_;
+    } point2d_data_v;
+    struct {
+      Type type_ = Type::Point_3d;
+      Point3d val_;
+    } point3d_data_v;
   };
 };
 
@@ -402,6 +415,10 @@ inline std::ostream &operator<<(std::ostream &os, const PropertyValueType type) 
       return os << "zoned temporal data";
     case PropertyValueType::Enum:
       return os << "enum";
+    case PropertyValueType::Point_2d:
+      return os << "point2d";
+    case PropertyValueType::Point_3d:
+      return os << "point3d";
   }
 }
 
@@ -623,6 +640,12 @@ inline PropertyValueImpl<Alloc>::PropertyValueImpl(PropertyValueImpl &&other, al
     case Type::Enum:
       enum_data_v.val_ = other.enum_data_v.val_;
       break;
+    case Type::Point_2d:
+      point2d_data_v.val_ = other.point2d_data_v.val_;
+      break;
+    case Type::Point_3d:
+      point3d_data_v.val_ = other.point3d_data_v.val_;
+      break;
   }
 }
 
@@ -736,6 +759,12 @@ inline auto PropertyValueImpl<Alloc>::operator=(PropertyValueImpl &&other) noexc
           break;
         case Type::Enum:
           enum_data_v.val_ = other.enum_data_v.val_;
+          break;
+        case Type::Point_2d:
+          point2d_data_v.val_ = other.point2d_data_v.val_;
+          break;
+        case Type::Point_3d:
+          point3d_data_v.val_ = other.point3d_data_v.val_;
           break;
       }
       return *this;
