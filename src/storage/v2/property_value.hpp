@@ -95,6 +95,10 @@ class PropertyValueImpl {
       : alloc_{alloc}, zoned_temporal_data_v{.val_ = value} {}
   explicit PropertyValueImpl(const Enum value, allocator_type const &alloc = allocator_type{})
       : alloc_{alloc}, enum_data_v{.val_ = value} {}
+  explicit PropertyValueImpl(const Point2d value, allocator_type const &alloc = allocator_type{})
+      : alloc_{alloc}, point2d_data_v{.val_ = value} {}
+  explicit PropertyValueImpl(const Point3d value, allocator_type const &alloc = allocator_type{})
+      : alloc_{alloc}, point3d_data_v{.val_ = value} {}
 
   // copy constructors for non-primitive types
   /// @throw std::bad_alloc
@@ -230,6 +234,8 @@ class PropertyValueImpl {
   bool IsEnum() const { return type_ == Type::Enum; }
   bool IsTemporalData() const { return type_ == Type::TemporalData; }
   bool IsZonedTemporalData() const { return type_ == Type::ZonedTemporalData; }
+  bool IsPoint2d() const { return type_ == Type::Point_2d; }
+  bool IsPoint3d() const { return type_ == Type::Point_3d; }
 
   // value getters for primitive types
   /// @throw PropertyValueException if value isn't of correct type.
@@ -277,6 +283,22 @@ class PropertyValueImpl {
     }
 
     return enum_data_v.val_;
+  }
+
+  auto ValuePoint2d() const -> Point2d {
+    if (type_ != Type::Point_2d) [[unlikely]] {
+      throw PropertyValueException("The value isn't an 2d point!");
+    }
+
+    return point2d_data_v.val_;
+  }
+
+  auto ValuePoint3d() const -> Point3d {
+    if (type_ != Type::Point_3d) [[unlikely]] {
+      throw PropertyValueException("The value isn't an 3d point!");
+    }
+
+    return point3d_data_v.val_;
   }
 
   // const value getters for non-primitive types

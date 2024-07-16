@@ -73,8 +73,12 @@ bool valid3d(CoordinateReferenceSystem val) {
 
 struct Point2d {
   Point2d(CoordinateReferenceSystem crs, double x, double y) : crs_{crs}, x_{x}, y_{y} {
-    MG_ASSERT(valid2d(crs), "Not a valid 2d Coordinate Reference System");
+    DMG_ASSERT(valid2d(crs), "Not a valid 2d Coordinate Reference System");
   }
+
+  auto x() const -> double { return x_; }
+  auto y() const -> double { return y_; }
+  auto crs() const -> CoordinateReferenceSystem { return crs_; }
 
  private:
   CoordinateReferenceSystem crs_;
@@ -83,9 +87,14 @@ struct Point2d {
 };
 
 struct Point3d {
-  Point3d(CoordinateReferenceSystem crs, double x, double y) : crs_{crs}, x_{x}, y_{y} {
-    MG_ASSERT(valid3d(crs), "Not a valid 3d Coordinate Reference System");
+  Point3d(CoordinateReferenceSystem crs, double x, double y, double z) : crs_{crs}, x_{x}, y_{y}, z_{z} {
+    DMG_ASSERT(valid3d(crs), "Not a valid 3d Coordinate Reference System");
   }
+
+  auto x() const -> double { return x_; }
+  auto y() const -> double { return y_; }
+  auto z() const -> double { return z_; }
+  auto crs() const -> CoordinateReferenceSystem { return crs_; }
 
  private:
   CoordinateReferenceSystem crs_;
