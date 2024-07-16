@@ -906,6 +906,7 @@ std::optional<uint64_t> DecodeZonedTemporalDataSize(Reader &reader) {
     }
     case Type::ENUM:
       reader->ReadInt(payload_size);
+      reader->ReadInt(payload_size);
       // double payload
       // - first for enum type
       // - second for enum value
