@@ -1290,27 +1290,35 @@ TypedValue LocalDateTime(const TypedValue *args, int64_t nargs, const FunctionCo
     return TypedValue(utils::LocalDateTime(ctx.timestamp), ctx.memory);
   }
 
-  if (args[0].IsString()) {
-    const auto &[date_parameters, local_time_parameters] = ParseLocalDateTimeParameters(args[0].ValueString());
-    return TypedValue(utils::LocalDateTime(date_parameters, local_time_parameters), ctx.memory);
-  }
-
   utils::DateParameters date_parameters;
   utils::LocalTimeParameters local_time_parameters;
-  using namespace std::literals;
-  std::unordered_map parameter_mappings{
-      std::pair{"year"sv, &date_parameters.year},
-      std::pair{"month"sv, &date_parameters.month},
-      std::pair{"day"sv, &date_parameters.day},
-      std::pair{"hour"sv, &local_time_parameters.hour},
-      std::pair{"minute"sv, &local_time_parameters.minute},
-      std::pair{"second"sv, &local_time_parameters.second},
-      std::pair{"millisecond"sv, &local_time_parameters.millisecond},
-      std::pair{"microsecond"sv, &local_time_parameters.microsecond},
-  };
 
-  MapNumericParameters<Integer>(parameter_mappings, args[0].ValueMap());
-  return TypedValue(utils::LocalDateTime(date_parameters, local_time_parameters), ctx.memory);
+  if (args[0].IsString()) {
+    const auto &[dp, ltp] = ParseLocalDateTimeParameters(args[0].ValueString());
+    date_parameters = dp;
+    local_time_parameters = ltp;
+  } else {
+    using namespace std::literals;
+    std::unordered_map parameter_mappings{
+        std::pair{"year"sv, &date_parameters.year},
+        std::pair{"month"sv, &date_parameters.month},
+        std::pair{"day"sv, &date_parameters.day},
+        std::pair{"hour"sv, &local_time_parameters.hour},
+        std::pair{"minute"sv, &local_time_parameters.minute},
+        std::pair{"second"sv, &local_time_parameters.second},
+        std::pair{"millisecond"sv, &local_time_parameters.millisecond},
+        std::pair{"microsecond"sv, &local_time_parameters.microsecond},
+    };
+
+    MapNumericParameters<Integer>(parameter_mappings, args[0].ValueMap());
+  }
+
+  utils::ZonedDateTimeParameters zdt_params(date_parameters, local_time_parameters,
+                                            utils::Timezone(std::chrono::current_zone()->name()));
+  return TypedValue(
+      utils::LocalDateTime(
+          std::chrono::microseconds(utils::ZonedDateTime(zdt_params).SysTimeSinceEpoch().time_since_epoch()).count()),
+      ctx.memory);
 }
 
 TypedValue Duration(const TypedValue *args, int64_t nargs, const FunctionContext &ctx) {
