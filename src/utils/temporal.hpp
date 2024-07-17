@@ -493,4 +493,5 @@ LocalTime CurrentLocalTime();
 LocalDateTime CurrentLocalDateTime();
 ZonedDateTime CurrentZonedDateTime();
 Timezone DefaultTimezone();
+Timezone CurrentTimezone();
 }  // namespace memgraph::utils

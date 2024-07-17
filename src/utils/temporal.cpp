@@ -20,6 +20,7 @@
 #include <ctime>
 #include <format>
 #include <limits>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -99,10 +100,18 @@ LocalDateTime CurrentLocalDateTime() {
 
 Timezone DefaultTimezone() { return Timezone("Etc/UTC"); }
 
+Timezone CurrentTimezone() {
+  try {
+    return Timezone(std::chrono::current_zone()->name());
+  } catch (const std::runtime_error &e) {
+    throw temporal::InvalidArgumentException("Failed to read current timezone: {}", e.what());
+  }
+}
+
 ZonedDateTime CurrentZonedDateTime() {
   namespace chrono = std::chrono;
   auto ts = chrono::time_point_cast<chrono::microseconds>(chrono::system_clock::now());
-  return ZonedDateTime(chrono::zoned_time{utils::DefaultTimezone(), ts});
+  return ZonedDateTime(chrono::zoned_time{utils::CurrentTimezone(), ts});
 }
 
 namespace {

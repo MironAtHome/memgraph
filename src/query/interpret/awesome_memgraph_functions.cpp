@@ -19,6 +19,7 @@
 #include <cstdlib>
 #include <functional>
 #include <random>
+#include <stdexcept>
 #include <string_view>
 #include <type_traits>
 #include <unordered_map>
@@ -1313,12 +1314,16 @@ TypedValue LocalDateTime(const TypedValue *args, int64_t nargs, const FunctionCo
     MapNumericParameters<Integer>(parameter_mappings, args[0].ValueMap());
   }
 
-  utils::ZonedDateTimeParameters zdt_params(date_parameters, local_time_parameters,
-                                            utils::Timezone(std::chrono::current_zone()->name()));
-  return TypedValue(
-      utils::LocalDateTime(
-          std::chrono::microseconds(utils::ZonedDateTime(zdt_params).SysTimeSinceEpoch().time_since_epoch()).count()),
-      ctx.memory);
+  try {
+    utils::ZonedDateTimeParameters zdt_params(date_parameters, local_time_parameters,
+                                              utils::Timezone(std::chrono::current_zone()->name()));
+    return TypedValue(
+        utils::LocalDateTime(
+            std::chrono::microseconds(utils::ZonedDateTime(zdt_params).SysTimeSinceEpoch().time_since_epoch()).count()),
+        ctx.memory);
+  } catch (const std::runtime_error & /* unused */) {
+    throw QueryRuntimeException("Failed to initialize the local timezone database. Try using ZonedDateTime instead.");
+  }
 }
 
 TypedValue Duration(const TypedValue *args, int64_t nargs, const FunctionContext &ctx) {

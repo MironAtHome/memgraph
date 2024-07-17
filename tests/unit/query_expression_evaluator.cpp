@@ -2398,11 +2398,16 @@ TYPED_TEST(FunctionTest, LocalTime) {
       QueryRuntimeException);
 }
 
+// LOCALDATETIME needs to convert from user's timezone to UTC
+// Use ZonedDateTime to help with conversion
 TYPED_TEST(FunctionTest, LocalDateTime) {
-  const auto local_date_time = memgraph::utils::LocalDateTime({1970, 1, 1}, {13, 3, 2, 0, 0});
-  EXPECT_EQ(this->EvaluateFunction("LOCALDATETIME", "1970-01-01T13:03:02").ValueLocalDateTime(), local_date_time);
-  const auto today = memgraph::utils::CurrentLocalDateTime();
-  const auto one_sec_in_microseconds = 1000000;
+  // String to localdatetime
+  const auto zoned_time =
+      memgraph::utils::ZonedDateTime({{1970, 1, 1}, {13, 3, 2, 0, 0}, memgraph::utils::CurrentTimezone()});
+  const auto local_time_utc = memgraph::utils::LocalDateTime(zoned_time.SysMicrosecondsSinceEpoch().count());
+  EXPECT_EQ(this->EvaluateFunction("LOCALDATETIME", "1970-01-01T13:03:02").ValueLocalDateTime(), local_time_utc);
+
+  // Map to localdatetime
   const auto map_param = TypedValue(std::map<std::string, TypedValue>{{"year", TypedValue(1972)},
                                                                       {"month", TypedValue(2)},
                                                                       {"day", TypedValue(3)},
@@ -2411,11 +2416,18 @@ TYPED_TEST(FunctionTest, LocalDateTime) {
                                                                       {"second", TypedValue(6)},
                                                                       {"millisecond", TypedValue(7)},
                                                                       {"microsecond", TypedValue(8)}});
+  const auto zoned_time2 =
+      memgraph::utils::ZonedDateTime({{1972, 2, 3}, {4, 5, 6, 7, 8}, memgraph::utils::CurrentTimezone()});
+  const auto local_time_utc2 = memgraph::utils::LocalDateTime(zoned_time2.SysMicrosecondsSinceEpoch().count());
+  EXPECT_EQ(this->EvaluateFunction("LOCALDATETIME", map_param).ValueLocalDateTime(), local_time_utc2);
 
-  EXPECT_EQ(this->EvaluateFunction("LOCALDATETIME", map_param).ValueLocalDateTime(),
-            memgraph::utils::LocalDateTime({1972, 2, 3}, {4, 5, 6, 7, 8}));
-  EXPECT_NEAR(this->EvaluateFunction("LOCALDATETIME").ValueLocalDateTime().MicrosecondsSinceEpoch(),
-              today.MicrosecondsSinceEpoch(), one_sec_in_microseconds);
+  // Now
+  const auto now_us = memgraph::utils::CurrentZonedDateTime().SysMicrosecondsSinceEpoch().count();
+  const auto one_sec_in_microseconds = 1e6;
+  EXPECT_NEAR(this->EvaluateFunction("LOCALDATETIME").ValueLocalDateTime().MicrosecondsSinceEpoch(), now_us,
+              one_sec_in_microseconds);
+
+  // Misformatted queries
   EXPECT_THROW(this->EvaluateFunction("LOCALDATETIME", "{}"), memgraph::utils::BasicException);
   EXPECT_THROW(this->EvaluateFunction("LOCALDATETIME",
                                       TypedValue(std::map<std::string, TypedValue>{{"hours", TypedValue(1970)}})),
