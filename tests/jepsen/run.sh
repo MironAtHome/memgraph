@@ -15,6 +15,14 @@ _JEPSEN_RUN_EXIT_STATUS=0
 ENTERPRISE_LICENSE=""
 ORGANIZATION_NAME=""
 PRINT_CONTEXT() {
+  PRINT_CONTEXT
+    ldd /opt/memgraph/memgraph || true
+    ldconfig -p
+    cat /etc/ld.so.conf.d/*
+
+    echo -e "LD_LIBRARY_PATH:\t\t $LD_LIBRARY_PATH"
+    echo -e "LD_RUN_PATH:\t\t $LD_RUN_PATH"
+
     echo -e "MEMGRAPH_BINARY_PATH:\t\t $MEMGRAPH_BINARY_PATH"
     echo -e "MEMGRAPH_MODULE_SUPPORT_LIB_PATH:\t\t $MEMGRAPH_MODULE_SUPPORT_LIB_PATH"
     echo -e "JEPSEN_VERSION:\t\t\t $JEPSEN_VERSION"
@@ -143,6 +151,7 @@ COPY_BINARIES() {
        docker cp "$support_lib" "$jepsen_node_name":"/opt/memgraph/src/query/${support_lib_name}"
        $docker_exec "chown -R root:root /opt/memgraph"
        $docker_exec "chmod -R 755 /opt/memgraph"
+       $docker_exec "ls -la /opt/memgraph/src/query/${support_lib_name}"
        $docker_exec "ln -s /opt/memgraph/$_binary_name /opt/memgraph/memgraph"
        $docker_exec "touch /opt/memgraph/memgraph.log"
        INFO "Copying $binary_name to $jepsen_node_name DONE."
