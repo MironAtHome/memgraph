@@ -141,6 +141,8 @@ COPY_BINARIES() {
        $docker_exec "rm -rf /opt/memgraph/ && mkdir -p /opt/memgraph/src/query"
        docker cp "$binary_path" "$jepsen_node_name":/opt/memgraph/"$_binary_name"
        docker cp "$support_lib" "$jepsen_node_name":"/opt/memgraph/src/query/${support_lib_name}"
+       $docker_exec "chown -R root:root /opt/memgraph"
+       $docker_exec "chmod -R 755 /opt/memgraph"
        $docker_exec "ln -s /opt/memgraph/$_binary_name /opt/memgraph/memgraph"
        $docker_exec "touch /opt/memgraph/memgraph.log"
        INFO "Copying $binary_name to $jepsen_node_name DONE."
