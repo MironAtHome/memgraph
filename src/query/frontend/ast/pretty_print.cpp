@@ -15,6 +15,7 @@
 
 #include "query/db_accessor.hpp"
 #include "query/frontend/ast/ast.hpp"
+#include "storage/v2/point.hpp"
 #include "storage/v2/property_value.hpp"
 #include "utils/algorithm.hpp"
 #include "utils/string.hpp"
@@ -201,6 +202,12 @@ void PrintObject(std::ostream *out, const DbAccessor *dba, const storage::Proper
       break;
     case storage::PropertyValue::Type::Enum:
       PrintObject(out, dba, value.ValueEnum());
+      break;
+    case storage::PropertyValue::Type::Point_2d:
+      PrintObject(out, dba, value.ValuePoint2d());
+      break;
+    case storage::PropertyValue::Type::Point_3d:
+      PrintObject(out, dba, value.ValuePoint3d());
   }
 }
 

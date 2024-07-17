@@ -99,12 +99,6 @@ void DumpDuration(std::ostream &os, const storage::TemporalData &value) {
   os << "DURATION(\"" << dur << "\")";
 }
 
-void DumpEnum(std::ostream &os, const storage::Enum &value, query::DbAccessor *dba) {
-  auto const opt_str = dba->EnumToName(value);
-  if (opt_str.HasError()) throw query::QueryRuntimeException("Unexpected error when getting enum.");
-  os << *opt_str;
-}
-
 void DumpTemporalData(std::ostream &os, const storage::TemporalData &value) {
   switch (value.type) {
     case storage::TemporalType::Date: {
@@ -139,6 +133,16 @@ void DumpZonedTemporalData(std::ostream &os, const storage::ZonedTemporalData &v
     }
   }
 }
+
+void DumpEnum(std::ostream &os, const storage::Enum &value, query::DbAccessor *dba) {
+  auto const opt_str = dba->EnumToName(value);
+  if (opt_str.HasError()) throw query::QueryRuntimeException("Unexpected error when getting enum.");
+  os << *opt_str;
+}
+
+void DumpPoint2d(std::ostream &os, const storage::Point2d &value) { os << "POINT(" << value << ")"; }
+
+void DumpPoint3d(std::ostream &os, const storage::Point3d &value) { os << "POINT(" << value << ")"; }
 
 }  // namespace
 
@@ -186,6 +190,14 @@ void DumpPropertyValue(std::ostream *os, const storage::PropertyValue &value, qu
     }
     case storage::PropertyValue::Type::Enum: {
       DumpEnum(*os, value.ValueEnum(), dba);
+      return;
+    }
+    case storage::PropertyValue::Type::Point_2d: {
+      DumpPoint2d(*os, value.ValuePoint2d());
+      return;
+    }
+    case storage::PropertyValue::Type::Point_3d: {
+      DumpPoint3d(*os, value.ValuePoint3d());
       return;
     }
   }

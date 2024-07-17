@@ -15,6 +15,7 @@
 
 #include "slk/streams.hpp"
 #include "storage/v2/durability/serialization.hpp"
+#include "storage/v2/point.hpp"
 #include "storage/v2/replication/slk.hpp"
 #include "utils/cast.hpp"
 #include "utils/file.hpp"
@@ -36,6 +37,10 @@ class Encoder final : public durability::BaseEncoder {
   void WriteString(std::string_view value) override;
 
   void WriteEnum(storage::Enum value) override;
+
+  void WritePoint2d(storage::Point2d value) override;
+
+  void WritePoint3d(storage::Point3d value) override;
 
   void WritePropertyValue(const PropertyValue &value) override;
 
@@ -64,6 +69,10 @@ class Decoder final : public durability::BaseDecoder {
   std::optional<std::string> ReadString() override;
 
   std::optional<Enum> ReadEnumValue() override;
+
+  std::optional<Point2d> ReadPoint2dValue() override;
+
+  std::optional<Point3d> ReadPoint3dValue() override;
 
   std::optional<PropertyValue> ReadPropertyValue() override;
 

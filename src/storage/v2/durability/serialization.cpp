@@ -16,6 +16,7 @@
 #include "storage/v2/durability/marker.hpp"
 #include "storage/v2/durability/serialization.hpp"
 
+#include "storage/v2/point.hpp"
 #include "storage/v2/property_value.hpp"
 #include "storage/v2/temporal.hpp"
 #include "utils/cast.hpp"
@@ -95,6 +96,20 @@ void Encoder::WriteEnum(storage::Enum value) {
   Write(reinterpret_cast<const uint8_t *>(&evalue), sizeof(evalue));
 }
 
+void Encoder::WritePoint2d(storage::Point2d value) {
+  WriteMarker(Marker::TYPE_POINT_2D);
+  WriteUint(static_cast<uint64_t>(value.crs()));
+  WriteDouble(value.x());
+  WriteDouble(value.y());
+}
+void Encoder::WritePoint3d(storage::Point3d value) {
+  WriteMarker(Marker::TYPE_POINT_3D);
+  WriteUint(static_cast<uint64_t>(value.crs()));
+  WriteDouble(value.x());
+  WriteDouble(value.y());
+  WriteDouble(value.z());
+}
+
 void Encoder::WritePropertyValue(const PropertyValue &value) {
   WriteMarker(Marker::TYPE_PROPERTY_VALUE);
   switch (value.type()) {
@@ -158,6 +173,14 @@ void Encoder::WritePropertyValue(const PropertyValue &value) {
     }
     case PropertyValue::Type::Enum: {
       WriteEnum(value.ValueEnum());
+      break;
+    }
+    case PropertyValue::Type::Point_2d: {
+      WritePoint2d(value.ValuePoint2d());
+      break;
+    }
+    case PropertyValue::Type::Point_3d: {
+      WritePoint3d(value.ValuePoint3d());
       break;
     }
   }
@@ -287,6 +310,41 @@ std::optional<Enum> Decoder::ReadEnumValue() {
   return Enum{EnumTypeId{etype}, EnumValueId{evalue}};
 }
 
+std::optional<Point2d> Decoder::ReadPoint2dValue() {
+  auto marker = ReadMarker();
+  if (!marker || *marker != Marker::TYPE_POINT_2D) return std::nullopt;
+
+  const auto crs = ReadUint();
+  if (!crs) return std::nullopt;
+
+  const auto x = ReadDouble();
+  if (!x) return std::nullopt;
+
+  const auto y = ReadDouble();
+  if (!y) return std::nullopt;
+
+  return Point2d{static_cast<CoordinateReferenceSystem>(*crs), *x, *y};
+}
+
+std::optional<Point3d> Decoder::ReadPoint3dValue() {
+  auto marker = ReadMarker();
+  if (!marker || *marker != Marker::TYPE_POINT_2D) return std::nullopt;
+
+  const auto crs = ReadUint();
+  if (!crs) return std::nullopt;
+
+  const auto x = ReadDouble();
+  if (!x) return std::nullopt;
+
+  const auto y = ReadDouble();
+  if (!y) return std::nullopt;
+
+  const auto z = ReadDouble();
+  if (!z) return std::nullopt;
+
+  return Point3d{static_cast<CoordinateReferenceSystem>(*crs), *x, *y, *z};
+}
+
 namespace {
 std::optional<TemporalData> ReadTemporalData(Decoder &decoder) {
   const auto inner_marker = decoder.ReadMarker();
@@ -412,6 +470,16 @@ std::optional<PropertyValue> Decoder::ReadPropertyValue() {
       if (!maybe_enum_value) return std::nullopt;
       return PropertyValue(*maybe_enum_value);
     }
+    case Marker::TYPE_POINT_2D: {
+      const auto maybe_point_2d_value = ReadPoint2dValue();
+      if (!maybe_point_2d_value) return std::nullopt;
+      return PropertyValue(*maybe_point_2d_value);
+    }
+    case Marker::TYPE_POINT_3D: {
+      const auto maybe_point_3d_value = ReadPoint3dValue();
+      if (!maybe_point_3d_value) return std::nullopt;
+      return PropertyValue(*maybe_point_3d_value);
+    }
 
     case Marker::TYPE_PROPERTY_VALUE:
     case Marker::SECTION_VERTEX:
@@ -531,6 +599,13 @@ bool Decoder::SkipPropertyValue() {
     }
     case Marker::TYPE_ENUM: {
       return !!ReadEnumValue();
+    }
+    case Marker::TYPE_POINT_2D: {
+      // TODO: .has_value maybe?
+      return !!ReadPoint2dValue();
+    }
+    case Marker::TYPE_POINT_3D: {
+      return !!ReadPoint3dValue();
     }
 
     case Marker::TYPE_PROPERTY_VALUE:

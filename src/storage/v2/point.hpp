@@ -72,13 +72,32 @@ bool valid3d(CoordinateReferenceSystem val) {
 }  // namespace
 
 struct Point2d {
+  Point2d() = default;  // needed for slk
+
   Point2d(CoordinateReferenceSystem crs, double x, double y) : crs_{crs}, x_{x}, y_{y} {
     DMG_ASSERT(valid2d(crs), "Not a valid 2d Coordinate Reference System");
   }
 
+  auto crs() const -> CoordinateReferenceSystem { return crs_; }
   auto x() const -> double { return x_; }
   auto y() const -> double { return y_; }
-  auto crs() const -> CoordinateReferenceSystem { return crs_; }
+
+  // TODO Ivan: Check how to print CRS
+  static std::string ToString(const Point2d &point) { return fmt::format("{}, {}", point.x_, point.y_); }
+
+  friend auto operator<(Point2d const &A, Point2d const &B) -> bool {
+    // TODO Ivan: check that crs is in right order
+    if (A.crs_ != B.crs_) return A.crs_ < B.crs_;
+    return A.x_ < B.x_ && A.y_ < B.y_;
+  }
+
+  friend auto operator==(Point2d const &A, Point2d const &B) -> bool {
+    return A.crs_ == B.crs_ && A.x_ == B.x_ && A.y_ == B.y_;
+  }
+
+  friend std::ostream &operator<<(std::ostream &os, const Point2d &point) {
+    return os << memgraph::storage::Point2d::ToString(point);
+  }
 
  private:
   CoordinateReferenceSystem crs_;
@@ -87,14 +106,33 @@ struct Point2d {
 };
 
 struct Point3d {
+  Point3d() = default;  // needed for slk
+
   Point3d(CoordinateReferenceSystem crs, double x, double y, double z) : crs_{crs}, x_{x}, y_{y}, z_{z} {
     DMG_ASSERT(valid3d(crs), "Not a valid 3d Coordinate Reference System");
   }
 
+  auto crs() const -> CoordinateReferenceSystem { return crs_; }
   auto x() const -> double { return x_; }
   auto y() const -> double { return y_; }
   auto z() const -> double { return z_; }
-  auto crs() const -> CoordinateReferenceSystem { return crs_; }
+
+  // TODO Ivan: Check how to print CRS
+  static std::string ToString(const Point3d &point) { return fmt::format("{}, {} {}", point.x_, point.y_, point.z_); }
+
+  friend auto operator<(Point3d const &A, Point3d const &B) -> bool {
+    // TODO Ivan: check that crs is in right order
+    if (A.crs_ != B.crs_) return A.crs_ < B.crs_;
+    return A.x_ < B.x_ && A.y_ < B.y_ && A.z_ < B.z_;
+  }
+
+  friend auto operator==(Point3d const &A, Point3d const &B) -> bool {
+    return A.crs_ == B.crs_ && A.x_ == B.x_ && A.y_ == B.y_ && A.z_ == B.z_;
+  }
+
+  friend std::ostream &operator<<(std::ostream &os, const Point3d &point) {
+    return os << memgraph::storage::Point3d::ToString(point);
+  }
 
  private:
   CoordinateReferenceSystem crs_;

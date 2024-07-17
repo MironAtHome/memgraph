@@ -191,6 +191,12 @@ class PropertyValueImpl {
       case Type::Enum:
         enum_data_v.val_ = other.enum_data_v.val_;
         return;
+      case Type::Point_2d:
+        point2d_data_v.val_ = other.point2d_data_v.val_;
+        return;
+      case Type::Point_3d:
+        point3d_data_v.val_ = other.point3d_data_v.val_;
+        return;
     }
   }
 
@@ -480,6 +486,15 @@ inline std::ostream &operator<<(std::ostream &os, const PropertyValueImpl<Alloc>
 
       return os << fmt::format("{{ type: {}, value: {} }}", e_type.value_of(), e_value.value_of());
     }
+    case PropertyValueType::Point_2d: {
+      // TODO Ivan: What to do about crs
+      const auto point = value.ValuePoint2d();
+      return os << fmt::format("{} {}", point.x(), point.y());
+    }
+    case PropertyValueType::Point_3d: {
+      const auto point = value.ValuePoint3d();
+      return os << fmt::format("{} {} {}", point.x(), point.y(), point.z());
+    }
   }
 }
 
@@ -527,6 +542,10 @@ inline bool operator==(const PropertyValueImpl<Alloc> &first, const PropertyValu
       return first.ValueZonedTemporalData() == second.ValueZonedTemporalData();
     case PropertyValueType::Enum:
       return first.ValueEnum() == second.ValueEnum();
+    case PropertyValueType::Point_2d:
+      return first.ValuePoint2d() == second.ValuePoint2d();
+    case PropertyValueType::Point_3d:
+      return first.ValuePoint3d() == second.ValuePoint3d();
   }
 }
 
@@ -568,6 +587,10 @@ inline bool operator<(const PropertyValueImpl<Alloc> &first, const PropertyValue
       return first.ValueZonedTemporalData() < second.ValueZonedTemporalData();
     case PropertyValueType::Enum:
       return first.ValueEnum() < second.ValueEnum();
+    case PropertyValueType::Point_2d:
+      return first.ValuePoint2d() < second.ValuePoint2d();
+    case PropertyValueType::Point_3d:
+      return first.ValuePoint3d() < second.ValuePoint3d();
   }
 }
 
@@ -621,6 +644,12 @@ inline PropertyValueImpl<Alloc>::PropertyValueImpl(const PropertyValueImpl &othe
       return;
     case Type::Enum:
       enum_data_v.val_ = other.enum_data_v.val_;
+      return;
+    case Type::Point_2d:
+      point2d_data_v.val_ = other.point2d_data_v.val_;
+      return;
+    case Type::Point_3d:
+      point3d_data_v.val_ = other.point3d_data_v.val_;
       return;
   }
 }
@@ -706,6 +735,12 @@ inline auto PropertyValueImpl<Alloc>::operator=(PropertyValueImpl const &other) 
           break;
         case Type::Enum:
           enum_data_v.val_ = other.enum_data_v.val_;
+          break;
+        case Type::Point_2d:
+          point2d_data_v.val_ = other.point2d_data_v.val_;
+          break;
+        case Type::Point_3d:
+          point3d_data_v.val_ = other.point3d_data_v.val_;
           break;
       }
       return *this;
